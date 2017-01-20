@@ -44,12 +44,13 @@ bool IndexRecord::parseEntry(char* buffer)
 		fi.size = fileAttr->realSize;
 		fi.allocedSize = fileAttr->allocedSize;
 		fi.name.assign(fileAttr->filename, fileAttr->filenameLength);
-		fi.flags = fileAttr->flags;
+		fi.flags = *(NTFS_FILE_FLAGS*)(&fileAttr->flags);
 		fi.referenceNumber = entryHead->referenceNumber;
-		printf("%S\n", fi.name.c_str());
-		if (fi.isDir()) {
+		//printf("%S\n", fi.name.c_str());
+		if (fi.flags.Directory && fi.name != L".") {
 			parser_->getFR(Utils::RefToNo(entryHead->referenceNumber));
 		}
+		files_.push_back(fi);
 		entryHead = (IndexEntryHeader*)((char*)entryHead + entryHead->entryLength);
 	}
 	return true;
@@ -81,6 +82,11 @@ bool IndexRecord::getFilesInDir(const std::wstring& dir, std::vector<FileInfo>* 
 	});
 	if (entry == files_.end())
 		return false;
-	return parser_->getFR(entry->referenceNumber)->getFilesInDir(
-		dir.substr(dir.find_first_of(L"\\") + 1), fileInfos);
+
+	std::wstring nextPart;
+	size_t index;
+	if ((index = dir.find_first_of(L"\\")) != -1)  {
+		nextPart = dir.substr(index + 1); 
+	}
+	return parser_->getFR(Utils::RefToNo(entry->referenceNumber))->getFilesInDir(nextPart, fileInfos);
 }

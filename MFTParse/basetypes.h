@@ -2,18 +2,37 @@
 
 #include <stdint.h>
 
+typedef struct
+{
+	DWORD    ReadOnly : 1;
+	DWORD    Hidden : 1;
+	DWORD    System : 1;
+	DWORD	 : 1; 
+	DWORD	 : 1;
+	DWORD    Archive : 1;
+	DWORD    Device : 1;
+	DWORD    Normal : 1;
+	DWORD    Temp : 1;
+	DWORD    Sparse : 1;
+	DWORD    Reparse : 1;
+	DWORD    Compressed : 1;
+	DWORD    Offline : 1;
+	DWORD    NotIndexed : 1;
+	DWORD    Encrypted : 1;
+	DWORD  : 13;
+	DWORD    Directory : 1;
+	DWORD    IndexView : 1;
+} NTFS_FILE_FLAGS;
+
 struct FileInfo {
 	uint64_t referenceNumber;
-	uint8_t flags;
+	NTFS_FILE_FLAGS flags;
 	time_t createTime;
 	time_t modifyTime;
 	time_t accessTime;
 	uint64_t size;
 	uint64_t allocedSize;
 	std::wstring name;
-	bool isDir() {
-		return !!(flags & FILE_ATTRIBUTE_DIRECTORY);
-	}
 };
 
 #pragma pack(1)
@@ -147,7 +166,7 @@ struct IndexEntryHeader
 	uint8_t padding[3];
 };
 
-struct IndexFileAttribute 
+struct IndexFileAttribute
 {
 	uint64_t parentReferenceNumber;
 	uint64_t createTime;
