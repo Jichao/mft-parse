@@ -66,3 +66,31 @@ std::string StringUtils::format(const char* format, ...)
 	else
 		return std::string(buff.data(), ret);
 }
+
+std::string StringUtils::UTF16ToANSI(const std::wstring& str)
+{
+	return UTF16ToStr(CP_ACP, str);
+}
+
+std::wstring StringUtils::ANSIToUTF16(const std::string& str)
+{
+	return StrToUTF16(CP_ACP, str);
+}
+
+std::string StringUtils::UTF16ToStr(int encoding, const std::wstring& str)
+{
+	DWORD len = WideCharToMultiByte(encoding, 0, str.data(), str.length(), 0, 0, 0, 0);
+	std::vector<char> charVec;
+	charVec.resize(len);
+	WideCharToMultiByte(encoding, 0, str.data(), str.length(), charVec.data(), charVec.size(), 0, 0);
+	return std::string(charVec.data(), charVec.size());
+}
+
+std::wstring StringUtils::StrToUTF16(int encoding, const std::string& str)
+{
+	DWORD wlen = MultiByteToWideChar(encoding, 0, str.data(), str.length(), 0, 0);
+	std::vector<wchar_t> wvec;
+	wvec.resize(wlen);
+	MultiByteToWideChar(encoding, 0, str.data(), str.length(), wvec.data(), wvec.size());
+	return std::wstring(wvec.data(), wvec.size());
+}

@@ -18,4 +18,4 @@
 #include <vector>
 #include <map>
 #include <memory>
-#include <bitset>
+#include <algorithm>

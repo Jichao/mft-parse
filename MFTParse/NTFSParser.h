@@ -4,24 +4,27 @@
 
 class FileRecord;
 
-class Parser
+class NTFSParser
 {
 public:
-	static Parser* GetParserForDriver(wchar_t driver);
-	~Parser();
+	static NTFSParser* GetParserForDriver(wchar_t driver);
+	~NTFSParser();
 	bool getFilesInDir(const std::wstring& dir, std::vector<FileInfo>* fileInfos);
 	bool init(wchar_t driver);
 	DBR& dbr();
 	bool getBuffer(uint64_t offset, uint32_t size, std::vector<char>* buffer);
+	bool getFRBuffer(uint64_t frNumber, std::vector<char>* buffer);
+	FileRecord* getFR(uint64_t frNumber);
 
 private:
 	bool parseAttr();
-	Parser();
+	NTFSParser();
 
 	bool dumpDBR();
 	DBR dbr_;
 	HANDLE hFile_;
-	std::unique_ptr<FileRecord> rootFR_;
-	static std::map<wchar_t, Parser*> s_parsers;
+	std::map<uint64_t, FileRecord*> frs_;
+
+	static std::map<wchar_t, NTFSParser*> s_parsers;
 };
 
