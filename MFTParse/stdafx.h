@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <tchar.h>
 #include <stdint.h>
+#include <assert.h>
 
 #include <windows.h>
 #include <strsafe.h>

@@ -21,32 +21,39 @@ struct DBR {
 	char jmp[3];
 	char oem[8];
 	uint16_t bytesPerSector;
-	uint8_t sectorsPerCluster;
+	int8_t sectorsPerCluster;
 	char reserverd1[7];
 	char diskType;
 	char reserverd2[2];
 	uint16_t sectorsPerTrack;
 	uint16_t headCount;
-	uint16_t hiddenSectors;
+	uint32_t hiddenSectors;
 	char reserved3[8];
 	uint64_t sectorCount;
 	uint64_t mftStartLCN;
 	uint64_t mftMirrStartLCN;
 	int8_t clustersPerFileRecord;
 	char reserved4[3];
-	int8_t clustersPerIndexBuffer;
+	int8_t clustersPerIndexRecord;
 	char reserved5[3];
 	uint64_t volumeNumber;
 	uint32_t checksum;
 	uint32_t bytesPerFR() {
 		if (clustersPerFileRecord < 0) {
-			return 2 << (-1 * clustersPerFileRecord);
+			return 1 << (-1 * clustersPerFileRecord);
 		} else {
 			return clustersPerFileRecord * bytesPerCluster();
 		}
 	}
 	uint32_t bytesPerCluster() {
 		return bytesPerSector * sectorsPerCluster;
+	}
+	uint32_t bytesPerIndexRecord() {
+		if (clustersPerIndexRecord < 0) {
+			return 1 << (-1 * clustersPerIndexRecord);
+		} else {
+			return clustersPerIndexRecord * bytesPerCluster();
+		}
 	}
 };
 
@@ -60,8 +67,8 @@ struct FileRecordHeader
 	uint16_t hardLinkCount;
 	uint16_t attributeOffset;
 	uint16_t flag;
-	uint16_t realSize;
-	uint16_t allocedSize;
+	uint32_t realSize;
+	uint32_t allocedSize;
 	uint64_t baseReferenceNumber;
 	uint16_t nextAttributeID;
 	uint16_t xpBoundary;
@@ -135,7 +142,7 @@ struct IndexEntryHeader
 {
 	uint64_t referenceNumber;
 	uint16_t entryLength;
-	uint16_t streamLength;
+	uint16_t filenameOffset;
 	uint8_t flag;
 	uint8_t padding[3];
 };

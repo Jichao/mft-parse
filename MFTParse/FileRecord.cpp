@@ -27,35 +27,40 @@ bool FileRecord::parse(uint64_t frNumber)
 
 	auto attrHead = (NonResidentAttributeHeader*)(header_->attributeOffset + buffer.data());
 	while ((char*)attrHead < (char*)header_ + header_->realSize) {
+		if (attrHead->type == UINT32_MAX)
+			break;
 		if (attrHead->type == 0xa0 || attrHead->type == 0x80) {
 			auto runList = Utils::GetRunListInfo(attrHead);
-			std::vector<char> buffer;
-			if (!readRunList(runList, &buffer)) {
-				return false;
+			if (!runList.empty()) {
+				if (attrHead->type == 0xa0) {
+					std::vector<char> buffer;
+					if (!readRunList(runList, &buffer)) {
+						return false;
+					}
+					indexRecord_ = new IndexRecord(parser_);
+					indexRecord_->parse(buffer);
+				} else if (attrHead->type == 0x80) {
+					dataRunList_ = runList;
+				}
 			}
-			if (attrHead->type == 0xa0) {
-				indexRecord_ = new IndexRecord(parser_);
-				indexRecord_->parse(buffer);
-			} else if (attrHead->type == 0x80) {
-				dataRunList_ = runList;
-			}
-		} else {
-			attrHead = (NonResidentAttributeHeader *)((char*)attrHead + attrHead->size);
 		}
+		attrHead = (NonResidentAttributeHeader *)((char*)attrHead + attrHead->size);
 	}
 	return true;
 }
 
 bool FileRecord::getFilesInDir(const std::wstring& dir, std::vector<FileInfo>* fileInfos)
 {
-	
-	return false;
+	if (!indexRecord_) {
+		return false;
+	}
+	return indexRecord_->getFilesInDir(dir, fileInfos);
 }
 
 bool FileRecord::fixUp(char* buffer)
 {
-	for (uint16_t i = 0; i < header_->updateSNSize; ++i) {
-		int16_t* valuePtr = (int16_t*)(buffer + 512 * i);
+	for (uint16_t i = 1; i < header_->updateSNSize; ++i) {
+		int16_t* valuePtr = (int16_t*)(buffer + 512 * i - 2);
 		if (*valuePtr != header_->updateNumber) {
 			return false;
 		}

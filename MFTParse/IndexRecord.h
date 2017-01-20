@@ -12,8 +12,8 @@ public:
 	bool getFilesInDir(const std::wstring& dir, std::vector<FileInfo>* fileInfos);
 
 private:
+	bool parseEntry(char* buffer);
 	bool fixUp(char* buffer);
-	IndexHeader* header_;
 	NTFSParser* parser_;
 	std::vector<FileInfo> files_;
 };

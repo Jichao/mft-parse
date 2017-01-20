@@ -15,15 +15,28 @@ IndexRecord::~IndexRecord()
 
 bool IndexRecord::parse(std::vector<char>& buffer)
 {
-	if (memcmp(buffer.data(), "INDX", 4) != 0)
-		return false;
-	header_ = (IndexHeader*)(buffer.data());
-	if (!fixUp(buffer.data()))
+	char* ptr = buffer.data();
+	while (ptr < buffer.data() + buffer.size()) {
+		if (!parseEntry(ptr)) {
+			return false;
+		}
+		ptr += parser_->dbr().bytesPerIndexRecord();
+	}
+	return true;
+}
+
+bool IndexRecord::parseEntry(char* buffer)
+{
+	if (memcmp(buffer, "INDX", 4) != 0)
 		return false;
 
-	auto entryHead = (IndexEntryHeader*)((char*)&header_->indexEntryOffset + header_->indexEntryOffset);
-	while ((char*)entryHead < (char*)header_ + header_->indexEntrySize) {
-		IndexFileAttribute* fileAttr = (IndexFileAttribute*)((char*)entryHead + 10);
+	if (!fixUp(buffer))
+		return false;
+
+	IndexHeader* header = (IndexHeader*)buffer;
+	auto entryHead = (IndexEntryHeader*)((char*)&header->indexEntryOffset + header->indexEntryOffset);
+	while ((char*)entryHead < (char*)header + header->indexEntrySize) {
+		IndexFileAttribute* fileAttr = (IndexFileAttribute*)((char*)entryHead + 0x10);
 		FileInfo fi;
 		fi.accessTime = fileAttr->lastAccessTime;
 		fi.createTime = fileAttr->createTime;
@@ -33,21 +46,24 @@ bool IndexRecord::parse(std::vector<char>& buffer)
 		fi.name.assign(fileAttr->filename, fileAttr->filenameLength);
 		fi.flags = fileAttr->flags;
 		fi.referenceNumber = entryHead->referenceNumber;
+		printf("%S\n", fi.name.c_str());
 		if (fi.isDir()) {
 			parser_->getFR(Utils::RefToNo(entryHead->referenceNumber));
 		}
+		entryHead = (IndexEntryHeader*)((char*)entryHead + entryHead->entryLength);
 	}
 	return true;
 }
 
 bool IndexRecord::fixUp(char* buffer)
 {
-	for (uint16_t i = 0; i < header_->updateSNSize; ++i) {
-		int16_t* valuePtr = (int16_t*)(buffer + 512 * i);
-		if (*valuePtr != header_->updateNumber) {
+	IndexHeader* header = (IndexHeader*)(buffer);
+	for (uint16_t i = 1; i < header->updateSNSize; ++i) {
+		int16_t* valuePtr = (int16_t*)(buffer + 512 * i - 2);
+		if (*valuePtr != header->updateNumber) {
 			return false;
 		}
-		*valuePtr = header_->updateArray[i];
+		*valuePtr = header->updateArray[i];
 	}
 	return true;
 }
@@ -68,4 +84,3 @@ bool IndexRecord::getFilesInDir(const std::wstring& dir, std::vector<FileInfo>* 
 	return parser_->getFR(entry->referenceNumber)->getFilesInDir(
 		dir.substr(dir.find_first_of(L"\\") + 1), fileInfos);
 }
-
